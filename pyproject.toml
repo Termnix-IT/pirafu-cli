@@ -1,6 +1,6 @@
 [project]
 name = "pirafu-cli"
-version = "0.2.0"
+version = "0.3.0"
 description = "Pirafu2411 Playgroundの公開準備・検証CLI"
 requires-python = ">=3.12"
 dependencies = [

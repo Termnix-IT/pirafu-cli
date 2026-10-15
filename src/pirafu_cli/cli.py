@@ -7,12 +7,14 @@ import typer
 
 from pirafu_cli import __version__
 from pirafu_cli.preview import preview, stop_preview
+from pirafu_cli.publishing import publish
+from pirafu_cli.registration import apply_registration, plan_registration
 from pirafu_cli.results import Notice, PirafuError, Result
 from pirafu_cli.services import check, doctor, initialize
 from pirafu_cli.status import status
 
 app = typer.Typer(
-    help="Pirafu2411 Playgroundの公開準備CLI（Phase 2B）。",
+    help="Pirafu2411 Playgroundの公開準備CLI（Phase 2C）。",
     no_args_is_help=True,
     invoke_without_command=True,
     add_completion=False,
@@ -166,6 +168,77 @@ def preview_command(
     )
 
 
+@app.command("publish")
+def publish_command(
+    config: Config = Path("pirafu.yaml"),
+    json_output: Json = False,
+    dry_run: DryRun = False,
+    non_interactive: NonInteractive = False,
+    offline: Offline = False,
+) -> Result:
+    """公開準備とPagesを読み取り照合する。デプロイやGit送信は行わない。"""
+    return publish(config, offline=offline, dry_run=dry_run)
+
+
+@app.command("register")
+def register_command(
+    config: Config = Path("pirafu.yaml"),
+    json_output: Json = False,
+    dry_run: DryRun = False,
+    non_interactive: NonInteractive = False,
+    offline: Offline = False,
+    portal_repo: Annotated[str | None, typer.Option(help="登録先GitHub owner/repo。必須。")] = None,
+    base: Annotated[str | None, typer.Option(help="PR取り込み先ブランチ。必須。")] = None,
+    catalog: Annotated[
+        Path | None, typer.Option(help="offline検査用のcatalogディレクトリ。")
+    ] = None,
+    update: Annotated[bool, typer.Option(help="既存IDのメタデータ更新を明示する。")] = False,
+    apply: Annotated[
+        bool, typer.Option("--apply", help="計画を適用し、pushとPR作成を行う。")
+    ] = False,
+    yes: Annotated[bool, typer.Option(help="計画・公開プレビューの可能性を承認する。")] = False,
+    expect_plan: Annotated[str | None, typer.Option(help="承認した計画のplanHash。")] = None,
+    confirm_external: Annotated[
+        bool, typer.Option("--confirm-external", help="unmanagedの公開先を手動確認済みと明示する。")
+    ] = False,
+) -> Result:
+    """登録・更新の差分を表示。適用時だけ隔離Git領域でPRを作成する。"""
+    plan = plan_registration(
+        config,
+        portal_repo=portal_repo,
+        base=base,
+        catalog=catalog,
+        update=update,
+        offline=offline,
+        dry_run=dry_run,
+        confirm_external=confirm_external,
+    )
+    if not apply or dry_run or plan.result.exit_code:
+        return plan.result
+    if expect_plan is not None and expect_plan != plan.fingerprint:
+        raise PirafuError(
+            "REGISTER_PLAN_CHANGED", "指定した計画と現在の計画が異なります。再計画してください。", 7
+        )
+    if plan.result.outcome == "no_change":
+        return plan.result
+    if not yes:
+        if not json_output and not non_interactive and sys.stdin.isatty():
+            typer.echo(plan.result.model_dump_json(exclude_none=True), err=True)
+            yes = typer.confirm(
+                "この計画でpush・PR作成を行いますか？公開プレビューが生成される可能性があります。",
+                err=True,
+            )
+        if not yes:
+            plan.result.outcome, plan.result.exit_code = "needs_action", 5
+            plan.result.nextActions = [
+                Notice(
+                    code="CONFIRM_REGISTER", message="差分確認後、--apply --yesで適用してください。"
+                )
+            ]
+            return plan.result
+    return apply_registration(plan, expect_plan=expect_plan)
+
+
 def main(args: list[str] | None = None) -> int:
     if args is None:
         # JSONをパイプで受けるCodex等へ、WindowsでもUTF-8で返す。
@@ -176,7 +249,12 @@ def main(args: list[str] | None = None) -> int:
     json_output = "--json" in argv
     dry_run = "--dry-run" in argv
     command = next(
-        (arg for arg in argv if arg in {"init", "check", "doctor", "status", "preview"}), "cli"
+        (
+            arg
+            for arg in argv
+            if arg in {"init", "check", "doctor", "status", "preview", "publish", "register"}
+        ),
+        "cli",
     )
     try:
         result = app(args=argv, standalone_mode=False)

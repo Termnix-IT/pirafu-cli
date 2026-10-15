@@ -11,6 +11,10 @@ from pirafu_cli.results import PirafuError
 def check_image(root: Path, image: dict) -> dict:
     path = inside(root, image["path"], "catalog.image.path")
     content = read_bytes(path, 2 * 1024 * 1024)
+    return check_image_bytes(content, path.suffix.lower())
+
+
+def check_image_bytes(content: bytes, suffix: str) -> dict:
     expected = {".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG", ".webp": "WEBP"}
     try:
         with warnings.catch_warnings():
@@ -18,7 +22,7 @@ def check_image(root: Path, image: dict) -> dict:
             with Image.open(io.BytesIO(content)) as source:
                 width, height = source.size
                 if (
-                    source.format != expected.get(path.suffix.lower())
+                    source.format != expected.get(suffix)
                     or not 0 < width <= 4096
                     or not 0 < height <= 4096
                     or getattr(source, "is_animated", False)
