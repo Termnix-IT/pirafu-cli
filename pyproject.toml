@@ -15,6 +15,10 @@ dependencies = [
   "psutil>=7.2,<8",
 ]
 
+[project.urls]
+Repository = "https://github.com/Termnix-IT/pirafu-cli"
+Documentation = "https://github.com/Termnix-IT/pirafu-playground/blob/main/docs/%E8%A8%AD%E8%A8%88%E3%81%A8%E5%AE%9F%E8%A3%85%E8%A8%88%E7%94%BB.md"
+
 [project.scripts]
 pirafu = "pirafu_cli.cli:main"
 

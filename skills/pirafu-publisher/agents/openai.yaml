@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pirafu Publisher"
+  short_description: "pirafu CLIで作品の公開準備と登録計画を検証し、承認済みの操作を進める"
+  default_prompt: "$pirafu-publisher を使って、この作品の構成と公開準備を確認し、登録計画を提示してください。"
