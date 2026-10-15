@@ -1,0 +1,55 @@
+name: CLI quality
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Verify (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.12', '3.14']
+    timeout-minutes: 15
+    env:
+      UV_PYTHON: ${{ matrix.python }}
+      PYTHONUTF8: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install uv
+        run: python -m pip install uv==0.12.21
+      - name: Install locked dependencies
+        run: uv sync --locked --python ${{ matrix.python }}
+      - name: Lint and format
+        run: |
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+      - name: Unit and CLI acceptance tests
+        run: uv run --no-sync pytest
+      - name: Build package
+        run: uv build --python ${{ matrix.python }}
+      - name: Install and verify packaged entry point
+        shell: bash
+        run: |
+          uv venv output/wheel-smoke --python ${{ matrix.python }}
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            smoke_python=output/wheel-smoke/Scripts/python.exe
+          else
+            smoke_python=output/wheel-smoke/bin/python
+          fi
+          uv pip install --python "$smoke_python" dist/*.whl
+          "$smoke_python" -I -m pirafu_cli --help
+          "$smoke_python" -I -m pirafu_cli doctor --offline --json --non-interactive

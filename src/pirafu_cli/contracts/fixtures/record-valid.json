@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "id": "sample-game",
+    "title": "サンプルゲーム",
+    "description": "契約検証用の架空作品です。",
+    "category": "games",
+    "status": "stable",
+    "visibility": "public",
+    "tags": ["puzzle", "browser"]
+  },
+  "launch": { "type": "external", "url": "https://example.com/sample-game/#start" },
+  "links": { "repository": "https://github.com/example/sample-game" },
+  "catalog": { "featured": false, "screenshots": [] },
+  "publication": { "visibility": "public", "launchEnabled": false }
+}

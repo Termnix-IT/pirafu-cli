@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "id": "sample-tool",
+    "title": "紹介サンプル",
+    "description": "紹介のみの作品。",
+    "category": "tools",
+    "status": "maintenance",
+    "visibility": "public"
+  },
+  "hosting": { "provider": "none", "mode": "none" },
+  "launch": { "type": "showcase" },
+  "catalog": {}
+}

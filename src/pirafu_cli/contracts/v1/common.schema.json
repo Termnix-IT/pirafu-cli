@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pirafu2411.example/contracts/v1/common.schema.json",
+  "$defs": {
+    "id": { "type": "string", "maxLength": 64, "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$" },
+    "text": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "url": { "type": "string", "format": "uri", "maxLength": 2048, "pattern": "^https://" },
+    "visibility": { "enum": ["public", "unlisted", "hidden"] },
+    "project": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "title", "description", "category", "status", "visibility"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "$ref": "#/$defs/text", "maxLength": 100 },
+        "description": { "$ref": "#/$defs/text", "maxLength": 4000 },
+        "category": { "enum": ["apps", "games", "tools", "other"] },
+        "status": { "enum": ["planned", "in-development", "stable", "maintenance", "archived"] },
+        "visibility": { "$ref": "#/$defs/visibility" },
+        "tags": { "type": "array", "maxItems": 12, "uniqueItems": true, "items": { "$ref": "#/$defs/text", "maxLength": 32 } }
+      }
+    },
+    "links": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "repository": { "$ref": "#/$defs/url" }, "website": { "$ref": "#/$defs/url" } }
+    },
+    "image": {
+      "type": "object", "additionalProperties": false, "required": ["path", "alt"],
+      "properties": {
+        "path": { "$ref": "#/$defs/text", "maxLength": 512 },
+        "alt": { "$ref": "#/$defs/text", "maxLength": 500 }
+      }
+    },
+    "catalog": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "featured": { "type": "boolean" },
+        "thumbnail": { "$ref": "#/$defs/image" },
+        "screenshots": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/image" } }
+      }
+    },
+    "launch": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "external" }, "url": { "$ref": "#/$defs/url" } } },
+        { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "showcase" } } }
+      ]
+    }
+  }
+}

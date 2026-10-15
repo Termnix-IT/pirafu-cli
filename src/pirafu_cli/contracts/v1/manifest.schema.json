@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pirafu2411.example/contracts/v1/manifest.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "project", "hosting", "launch", "catalog"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "project": { "$ref": "common.schema.json#/$defs/project" },
+    "launch": { "$ref": "common.schema.json#/$defs/launch" },
+    "links": { "$ref": "common.schema.json#/$defs/links" },
+    "catalog": { "$ref": "common.schema.json#/$defs/catalog" },
+    "hosting": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["provider", "mode", "projectName", "productionBranch", "rootDirectory", "buildCommand", "outputDirectory"],
+          "properties": {
+            "provider": { "const": "cloudflare-pages" }, "mode": { "const": "git" },
+            "projectName": { "type": "string", "minLength": 1, "maxLength": 58, "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$", "description": "ローカル契約では58文字以下・末尾英数字に制限する。Cloudflare APIが許容する全範囲を保証するものではなく、実際の制約は接続時に再確認する。" },
+            "productionBranch": { "$ref": "common.schema.json#/$defs/text", "maxLength": 255 },
+            "rootDirectory": { "$ref": "common.schema.json#/$defs/text", "maxLength": 512 },
+            "buildCommand": { "type": "string", "maxLength": 4096 },
+            "outputDirectory": { "$ref": "common.schema.json#/$defs/text", "maxLength": 512 }
+          }
+        },
+        { "type": "object", "additionalProperties": false, "required": ["provider", "mode"], "properties": { "provider": { "const": "none" }, "mode": { "const": "none" } } },
+        { "type": "object", "additionalProperties": false, "required": ["provider", "mode"], "properties": { "provider": { "const": "external" }, "mode": { "const": "unmanaged" } } }
+      ]
+    },
+    "local": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "build": { "$ref": "#/$defs/argv" },
+        "preview": { "$ref": "#/$defs/argv" }
+      }
+    }
+  },
+  "$defs": { "argv": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "type": "string", "maxLength": 4096 } } }
+}

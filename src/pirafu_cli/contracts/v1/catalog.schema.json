@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pirafu2411.example/contracts/v1/catalog.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "project", "launch", "catalog", "publication"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "project": { "$ref": "common.schema.json#/$defs/project" },
+    "launch": { "$ref": "common.schema.json#/$defs/launch" },
+    "links": { "$ref": "common.schema.json#/$defs/links" },
+    "catalog": { "$ref": "common.schema.json#/$defs/catalog" },
+    "publication": {
+      "type": "object", "additionalProperties": false, "required": ["visibility", "launchEnabled"],
+      "properties": { "visibility": { "$ref": "common.schema.json#/$defs/visibility" }, "launchEnabled": { "type": "boolean" } }
+    }
+  },
+  "allOf": [{
+    "if": { "properties": { "launch": { "properties": { "type": { "const": "external" } } } } },
+    "then": { "properties": { "launch": { "required": ["url"], "properties": { "url": {} } } } }
+  }]
+}

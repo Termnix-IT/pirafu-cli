@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/Termnix-IT/pirafu-playground",
+  "commit": "9cac3f2d681a5abceca665aa19733d6975a29846",
+  "revision": "v1-r1",
+  "files": {
+    "v1/catalog.schema.json": "93d77c7a1daf436df6fbd41058aef3acefa9e96c1307dcf12e8360d156a80f06",
+    "v1/common.schema.json": "98ae97e86f0acd3f3fc04b4ace308a642f1f79a18e312ee87fa7ec1954fec9ec",
+    "v1/manifest.schema.json": "257f16871512bc9782da35f66b4b1e6bd9acddfc27fe7dda242361d6a7af28f7",
+    "fixtures/cases.json": "c8a92c4f895e41e20cb55a3f799f767df6c440b2fdf576ed168f72e06688ca27",
+    "fixtures/manifest-valid.json": "ae739ddd7b55f8415ddd82c38ca2cfeee9e28f44f0afe638c565f08452c34287",
+    "fixtures/record-valid.json": "00cafbbed8633f1135620e2238f0d125af67a2829ac7cf1c9fa4adf1985fd8f6"
+  }
+}

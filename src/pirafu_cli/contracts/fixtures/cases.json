@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    { "name": "supported record", "kind": "record", "base": "record-valid.json", "valid": true, "changes": [] },
+    { "name": "supported showcase manifest", "kind": "manifest", "base": "manifest-valid.json", "valid": true, "changes": [] },
+    { "name": "unknown schema version", "kind": "record", "base": "record-valid.json", "valid": false, "changes": [{ "path": ["schemaVersion"], "value": 2 }] },
+    { "name": "unknown record field", "kind": "record", "base": "record-valid.json", "valid": false, "changes": [{ "path": ["secret"], "value": "not-a-real-secret" }] },
+    { "name": "unknown nested field", "kind": "record", "base": "record-valid.json", "valid": false, "changes": [{ "path": ["project", "extra"], "value": true }] },
+    { "name": "Windows reserved ID", "kind": "record", "base": "record-valid.json", "valid": false, "changes": [{ "path": ["project", "id"], "value": "con" }] },
+    { "name": "normalized duplicate tags", "kind": "record", "base": "record-valid.json", "valid": false, "changes": [{ "path": ["project", "tags"], "value": ["Game", "ＧＡＭＥ"] }] },
+    { "name": "private host", "kind": "record", "base": "record-valid.json", "valid": false, "changes": [{ "path": ["launch", "url"], "value": "https://127.0.0.1/" }] },
+    { "name": "query is forbidden", "kind": "record", "base": "record-valid.json", "valid": false, "changes": [{ "path": ["launch", "url"], "value": "https://example.com/?token=placeholder" }] },
+    { "name": "unsupported embedded mode", "kind": "record", "base": "record-valid.json", "valid": false, "changes": [{ "path": ["launch"], "value": { "type": "embedded" } }] },
+    { "name": "showcase forbids URL", "kind": "manifest", "base": "manifest-valid.json", "valid": false, "changes": [{ "path": ["launch", "url"], "value": "https://example.com/" }] },
+    { "name": "hosting provider and mode must match", "kind": "manifest", "base": "manifest-valid.json", "valid": false, "changes": [{ "path": ["hosting", "mode"], "value": "git" }] }
+  ]
+}

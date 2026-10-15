@@ -1,0 +1,38 @@
+[project]
+name = "pirafu-cli"
+version = "0.1.0"
+description = "Pirafu2411 Playgroundの公開準備・検証CLI"
+requires-python = ">=3.12"
+dependencies = [
+  "typer>=0.27.3,<0.28",
+  "pydantic>=2.12,<3",
+  "PyYAML>=6.0.3,<7",
+  "jsonschema>=4.26,<5",
+  "rfc3986-validator>=0.1.1,<1",
+  "referencing>=0.37,<1",
+  "Pillow>=12.1,<13",
+]
+
+[project.scripts]
+pirafu = "pirafu_cli.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=9,<10", "ruff>=0.14,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pirafu_cli"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
