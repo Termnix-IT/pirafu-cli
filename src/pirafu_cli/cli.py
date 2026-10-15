@@ -94,7 +94,7 @@ def check_command(
         bool, typer.Option(help="Cloudflareの本番と設定を読み取り照合する。")
     ] = False,
 ) -> Result:
-    """設定・パス・画像を検証する。ビルド・ネットワーク通信は行わない。"""
+    """設定・パス・画像を検証。--onlineでPagesを読み取り照合する。"""
     if online and offline:
         raise PirafuError("ARGUMENT_INVALID", "--onlineと--offlineは同時指定できません。")
     return check(config, target=target, catalog=catalog, dry_run=dry_run, online=online)
