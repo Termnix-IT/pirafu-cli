@@ -428,6 +428,6 @@ def test_missing_output_and_private_artifacts_are_not_publishable(tmp_path, caps
 
 def test_version_and_help_entry_points(capsys):
     assert main(["--version"]) == 0
-    assert capsys.readouterr().out.strip() == "0.1.0"
+    assert capsys.readouterr().out.strip() == "0.2.0"
     assert main(["--help"]) == 0
     assert "doctor" in capsys.readouterr().out

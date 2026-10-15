@@ -1,6 +1,6 @@
 [project]
 name = "pirafu-cli"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pirafu2411 Playgroundの公開準備・検証CLI"
 requires-python = ">=3.12"
 dependencies = [
@@ -11,6 +11,8 @@ dependencies = [
   "rfc3986-validator>=0.1.1,<1",
   "referencing>=0.37,<1",
   "Pillow>=12.1,<13",
+  "httpx>=0.28,<1",
+  "psutil>=7.2,<8",
 ]
 
 [project.scripts]

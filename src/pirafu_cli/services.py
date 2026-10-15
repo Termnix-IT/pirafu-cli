@@ -219,7 +219,9 @@ def _check_catalog(root: Path, manifest: dict) -> str:
     return "unique_in_snapshot"
 
 
-def check(config: Path, *, target: str, catalog: Path | None, dry_run: bool) -> Result:
+def check(
+    config: Path, *, target: str, catalog: Path | None, dry_run: bool, online=False
+) -> Result:
     if target not in {"local", "publish", "register"}:
         raise PirafuError("TARGET_INVALID", "local/publish/registerを指定してください。")
     config = config.absolute()
@@ -261,16 +263,26 @@ def check(config: Path, *, target: str, catalog: Path | None, dry_run: bool) -> 
         result.warnings.append(Notice(code="LAUNCH_URL_MISSING", message="本番URLが未設定です。"))
         if target == "register":
             return needs_action(result, "SET_LAUNCH_URL", "確認済み本番URLを設定してください。")
+    if online:
+        from pirafu_cli.status import status
+
+        observed = status(config, dry_run=dry_run)
+        result.data["deploymentCheck"] = observed.data
+        result.warnings.extend(observed.warnings)
+        result.errors.extend(observed.errors)
+        result.nextActions.extend(observed.nextActions)
+        result.outcome, result.exit_code = observed.outcome, observed.exit_code
+        return result
     if target in {"publish", "register"} and manifest["launch"]["type"] == "external":
         return needs_action(
             result,
             "VERIFY_HOSTING_ONLINE",
-            "本番・連携状態のオンライン確認はPhase 2Bで対応します。",
+            "本番・連携状態を--onlineで照合してください。",
         )
     return result
 
 
-def doctor(*, offline: bool, dry_run: bool) -> Result:
+def doctor(*, offline: bool, dry_run: bool, config: Path | None = None) -> Result:
     _, source = bundle()
     result = Result(
         command="doctor",
@@ -331,12 +343,29 @@ def doctor(*, offline: bool, dry_run: bool) -> Result:
                 Notice(code="GITHUB_AUTH_UNAVAILABLE", message="GitHub認証を確認できません。")
             )
             result.exit_code = result.exit_code or 4
-    result.warnings.append(
-        Notice(
-            code="CLOUDFLARE_AUTH_NOT_CHECKED",
-            message="ブラウザーのログインとCLI認証は別です。Cloudflare API認証は未検証です。",
+    if not offline and config is not None and config.is_file():
+        manifest = validate(load_manifest(config.absolute()))
+        if manifest["hosting"]["provider"] == "cloudflare-pages":
+            from pirafu_cli.cloudflare import PagesReader
+
+            try:
+                reader = PagesReader()
+                try:
+                    reader.get_project(manifest["hosting"]["projectName"])
+                    result.data["cloudflareAuth"] = "verified_project_read"
+                finally:
+                    reader.close()
+            except PirafuError as exc:
+                result.data["cloudflareAuth"] = "unavailable"
+                result.errors.append(exc.notice)
+                result.exit_code = result.exit_code or exc.exit_code
+    if result.data["cloudflareAuth"] == "not_checked":
+        result.warnings.append(
+            Notice(
+                code="CLOUDFLARE_AUTH_NOT_CHECKED",
+                message="Cloudflare API認証は未検証です。--configと環境変数で診断してください。",
+            )
         )
-    )
     if result.data["credentialStorage"] in {"unknown", "unverified_or_plaintext"}:
         result.warnings.append(
             Notice(

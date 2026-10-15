@@ -4,9 +4,38 @@ import subprocess
 import threading
 from pathlib import Path
 
+import psutil
+
 from pirafu_cli.results import PirafuError
 
 TOOL_TIMEOUT_SECONDS = 15
+
+
+def stop_owned(process: subprocess.Popen) -> None:
+    """このプロセスが起動して保持するPopenだけを終了する。保存PIDには使わない。"""
+    if process.poll() is not None:
+        return
+    try:
+        children = psutil.Process(process.pid).children(recursive=True)
+    except psutil.Error:
+        children = []
+    for child in reversed(children):
+        try:
+            child.terminate()
+        except psutil.Error:
+            pass
+    process.terminate()
+    _, alive = psutil.wait_procs(children, timeout=2)
+    for child in alive:
+        try:
+            child.kill()
+        except psutil.Error:
+            pass
+    try:
+        process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=2)
 
 
 def run_tool(name: str, arguments: list[str]) -> tuple[int, bytes]:

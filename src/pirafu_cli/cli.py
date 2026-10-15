@@ -6,11 +6,13 @@ from typing import Annotated
 import typer
 
 from pirafu_cli import __version__
+from pirafu_cli.preview import preview, stop_preview
 from pirafu_cli.results import Notice, PirafuError, Result
 from pirafu_cli.services import check, doctor, initialize
+from pirafu_cli.status import status
 
 app = typer.Typer(
-    help="Pirafu2411 Playgroundの公開準備CLI（Phase 2A）。",
+    help="Pirafu2411 Playgroundの公開準備CLI（Phase 2B）。",
     no_args_is_help=True,
     invoke_without_command=True,
     add_completion=False,
@@ -88,9 +90,14 @@ def check_command(
     offline: Offline = False,
     target: Annotated[str, typer.Option(help="local/publish/register。")] = "local",
     catalog: Annotated[Path | None, typer.Option(help="Portalのcatalogディレクトリ。")] = None,
+    online: Annotated[
+        bool, typer.Option(help="Cloudflareの本番と設定を読み取り照合する。")
+    ] = False,
 ) -> Result:
     """設定・パス・画像を検証する。ビルド・ネットワーク通信は行わない。"""
-    return check(config, target=target, catalog=catalog, dry_run=dry_run)
+    if online and offline:
+        raise PirafuError("ARGUMENT_INVALID", "--onlineと--offlineは同時指定できません。")
+    return check(config, target=target, catalog=catalog, dry_run=dry_run, online=online)
 
 
 @app.command("doctor")
@@ -102,7 +109,61 @@ def doctor_command(
     offline: Offline = False,
 ) -> Result:
     """必要ツールと認証を診断する。インストール・ログインは行わない。"""
-    return doctor(offline=offline, dry_run=dry_run)
+    return doctor(offline=offline, dry_run=dry_run, config=config)
+
+
+@app.command("status")
+def status_command(
+    config: Config = Path("pirafu.yaml"),
+    json_output: Json = False,
+    dry_run: DryRun = False,
+    non_interactive: NonInteractive = False,
+    offline: Offline = False,
+    wait: Annotated[bool, typer.Option(help="指定期限まで本番を待つ。")] = False,
+    timeout: Annotated[float, typer.Option()] = 120.0,
+    interval: Annotated[float, typer.Option()] = 5.0,
+    expect_commit: Annotated[str | None, typer.Option()] = None,
+) -> Result:
+    """現在の本番と最新試行を区別して照会する。外部変更は行わない。"""
+    return status(
+        config,
+        offline=offline,
+        dry_run=dry_run,
+        wait=wait,
+        timeout=timeout,
+        interval=interval,
+        expected=expect_commit,
+    )
+
+
+@app.command("preview")
+def preview_command(
+    config: Config = Path("pirafu.yaml"),
+    json_output: Json = False,
+    dry_run: DryRun = False,
+    non_interactive: NonInteractive = False,
+    offline: Offline = False,
+    port: Annotated[int, typer.Option()] = 0,
+    ttl: Annotated[int, typer.Option(help="プレビューの自動終了までの秒数。")] = 3600,
+    spa: Annotated[bool, typer.Option(help="拡張子のない未存在パスをindex.htmlへ戻す。")] = False,
+    background: Annotated[bool, typer.Option()] = False,
+    run_command: Annotated[bool, typer.Option(help="対応するlocal.previewを実行する。")] = False,
+    yes: Annotated[bool, typer.Option()] = False,
+    stop: Annotated[str | None, typer.Option(help="指定セッションを停止する。")] = None,
+) -> Result:
+    """127.0.0.1でプレビュー。JSON・非対話はバックグラウンドで起動する。"""
+    if stop:
+        return stop_preview(stop, dry_run=dry_run)
+    return preview(
+        config,
+        dry_run=dry_run,
+        background=background or json_output or non_interactive,
+        run_command=run_command,
+        yes=yes,
+        port=port,
+        ttl=ttl,
+        spa=spa,
+    )
 
 
 def main(args: list[str] | None = None) -> int:
@@ -114,7 +175,9 @@ def main(args: list[str] | None = None) -> int:
     argv = sys.argv[1:] if args is None else args
     json_output = "--json" in argv
     dry_run = "--dry-run" in argv
-    command = next((arg for arg in argv if arg in {"init", "check", "doctor"}), "cli")
+    command = next(
+        (arg for arg in argv if arg in {"init", "check", "doctor", "status", "preview"}), "cli"
+    )
     try:
         result = app(args=argv, standalone_mode=False)
         if not isinstance(result, Result):
@@ -123,7 +186,7 @@ def main(args: list[str] | None = None) -> int:
         result = Result(
             command=command,
             dryRun=dry_run,
-            outcome="error",
+            outcome="needs_action" if exc.exit_code == 5 else "error",
             errors=[exc.notice],
             exit_code=exc.exit_code,
         )
